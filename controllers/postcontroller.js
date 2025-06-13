@@ -3,9 +3,9 @@ const connection = require("../data/db.js");
 // INDEX
 
 const index = (req, res) => {
-  const sql = "SELECT * FROM posts";
+  const sqlPost = "SELECT * FROM posts";
 
-  connection.query(sql, (err, results) => {
+  connection.query(sqlPost, (err, results) => {
     if (err) return res.status(500).json({ error: "Database query failed" });
     res.json(results);
   });
@@ -19,13 +19,38 @@ const index = (req, res) => {
 
 const show = (req, res) => {
   const postId = parseInt(req.params.id);
-  const sql = "SELECT * FROM posts WHERE id = ?";
-  connection.query(sql, [postId], (err, results) => {
+
+  const sqlPost = "SELECT * FROM posts WHERE id = ?";
+  connection.query(sqlPost, [postId], (err, results) => {
+    // Qui ho i risultati
+
     if (err) return res.status(500).json({ error: "Database query failed" });
     if (results.length === 0)
       return res.status(404).json({ error: "Post not found" });
-    res.json(results[0]);
+    //res.json(results[0]);
+    const post = results[0];
+
+    // Mi scrivo la seconda query
+    const sqlTags = `SELECT 
+      \`tags\`.*
+      FROM
+      \`post_tag\`
+          INNER JOIN
+      \`tags\` ON \`tags\`.\`id\` = \`post_tag\`.\`tag_id\`
+       WHERE
+      \`post_tag\`.\`post_id\` = ?`;
+
+    connection.query(sqlTags, [postId], (err, results) => {
+      if (err) return res.status(500).json({ error: "Error executing query" });
+      post.tags = results;
+      res.json({
+        description: "Lettura del dettaglio dei post" + postId,
+        data: post,
+        status: 200,
+      });
+    });
   });
+
   // const post = blogPost.find((currentPost) => currentPost.id === id);
   // console.log(post);
 
@@ -38,10 +63,6 @@ const show = (req, res) => {
   //   });
   //   return;
   // }
-  // res.json({
-  //   description: "Lettura del dettaglio dei post" + id,
-  //   data: post,
-  // });
 };
 
 // STORE
