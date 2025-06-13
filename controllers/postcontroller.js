@@ -1,8 +1,14 @@
 const blogPost = require("../data/blogPosts.js");
-
+const connection = require("../data/db.js");
 // INDEX
 
 const index = (req, res) => {
+  const sql = "SELECT * FROM posts";
+
+  connection.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: "Database query failed" });
+    res.json(results);
+  });
   res.json({
     description: "Lettura della lista dei post",
     data: blogPost,
@@ -12,23 +18,30 @@ const index = (req, res) => {
 //SHOW
 
 const show = (req, res) => {
-  const id = parseInt(req.params.id);
-  const post = blogPost.find((currentPost) => currentPost.id === id);
-  console.log(post);
-
-  // CHECK
-  if (!post) {
-    res.status(404);
-    req.json({
-      error: 404,
-      message: "post not found",
-    });
-    return;
-  }
-  res.json({
-    description: "Lettura del dettaglio dei post" + id,
-    data: post,
+  const postId = parseInt(req.params.id);
+  const sql = "SELECT * FROM posts WHERE id = ?";
+  connection.query(sql, [postId], (err, results) => {
+    if (err) return res.status(500).json({ error: "Database query failed" });
+    if (results.length === 0)
+      return res.status(404).json({ error: "Post not found" });
+    res.json(results[0]);
   });
+  // const post = blogPost.find((currentPost) => currentPost.id === id);
+  // console.log(post);
+
+  // // CHECK
+  // if (!post) {
+  //   res.status(404);
+  //   req.json({
+  //     error: 404,
+  //     message: "post not found",
+  //   });
+  //   return;
+  // }
+  // res.json({
+  //   description: "Lettura del dettaglio dei post" + id,
+  //   data: post,
+  // });
 };
 
 // STORE
@@ -79,25 +92,30 @@ const update = (req, res) => {
 //DESTROY
 
 const destroy = (req, res) => {
-  const id = parseInt(req.params.id);
-  const post = blogPost.find((currentPost) => currentPost.id === id);
+  const postId = parseInt(req.params.id);
 
-  //CHECK POST ESISTENTE
-  const postIndex = blogPost.indexOf(post);
-  blogPost.splice(postIndex, 1);
-  console.log("Lista aggiornata:", blogPost);
+  connection.query("DELETE FROM posts WHERE id = ?", [postId], (err) => {
+    if (err) return res.status(500).json({ error: "Failed to delete post" });
+    res.sendStatus(204);
+  });
+  // const post = blogPost.find((currentPost) => currentPost.id === id);
 
-  //CHECK
-  if (!post) {
-    res.status(404);
-    req.json({
-      error: 404,
-      message: "post inesistente",
-    });
-    return;
-  }
+  // //CHECK POST ESISTENTE
+  // const postIndex = blogPost.indexOf(post);
+  // blogPost.splice(postIndex, 1);
+  // console.log("Lista aggiornata:", blogPost);
 
-  res.status(204).send();
+  // //CHECK
+  // if (!post) {
+  //   res.status(404);
+  //   req.json({
+  //     error: 404,
+  //     message: "post inesistente",
+  //   });
+  //   return;
+  // }
+
+  // res.status(204).send();
 };
 
 module.exports = { index, show, store, update, destroy };
